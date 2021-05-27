@@ -1,0 +1,187 @@
+#!/bin/sh
+
+# Copyright 2021, U2FsdGVkX1 <U2FsdGVkX1@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License at <http://www.gnu.org/licenses/> for
+# more details.
+
+set -e
+
+if command -v wget >/dev/null 2>&1; then
+	download() { wget -O- "https://download.opensuse.org/$@" ; }
+elif command -v curl >/dev/null 2>&1; then
+	download() { curl -fL "https://download.opensuse.org/$@" ; }
+else
+	echo "This script needs curl or wget" >&2
+	exit 2
+fi
+
+cpu_type=$(uname -m)
+
+download_and_extract_bootstrap() {
+	local sha256 filename
+
+	download "repositories/Virtualization:/containers:/images:/openSUSE-$version/$container/opensuse-$versionlower-image.$cpu_type-lxc.tar.xz.sha256" > sha256sums.txt
+	read -r sha256 filename < sha256sums.txt
+	download "repositories/Virtualization:/containers:/images:/openSUSE-$version/$container/$filename" > $filename
+	sha256sum -c sha256sums.txt || exit 1
+
+	mkdir openSUSE
+	tar -xpf $filename -C /openSUSE
+	rm -f $filename
+
+	if grep -E "^nameserver\s+127\." /etc/resolv.conf > /dev/null; then
+		echo "nameserver 8.8.8.8" > /openSUSE/etc/resolv.conf
+	else
+		cp -Lp /etc/resolv.conf /openSUSE/etc
+	fi
+
+	mount -t proc /proc /openSUSE/proc
+	mount --make-rslave --rbind /sys /openSUSE/sys
+	mount --make-rslave --rbind /dev /openSUSE/dev
+	mount --make-rslave --rbind /run /openSUSE/run
+	mount --bind / /openSUSE/mnt
+}
+
+save_root_pass() {
+	grep "^root:" /etc/shadow > /openSUSE/root.passwd
+	chmod 0600 /openSUSE/root.passwd
+}
+
+backup_old_files() {
+	cp -Lp /etc/hostname /openSUSE/etc
+	cp -Lp /etc/localtime /openSUSE/etc
+	cp -Lp /etc/fstab /openSUSE/etc
+}
+
+delete_all() {
+	# Delete *all* files from /
+	find / \( ! -path '/dev/*' -and ! -path '/proc/*' -and ! -path '/sys/*' -and ! -path '/selinux/*' -and ! -path '/openSUSE/*' -and ! -name '/swapfile' \) -delete 2>/dev/null || true
+}
+
+chroot_exec() {
+	"/openSUSE/lib64"/ld-*.so --library-path /openSUSE/lib64 \
+		/openSUSE/usr/bin/chroot /openSUSE /bin/bash -c "$*"
+}
+
+configure_chroot() {
+	chroot_exec 'mkdir /mnt/etc'
+	chroot_exec 'cp -rp /etc/{zypp,resolv.conf} /mnt/etc'
+	chroot_exec 'zypper --gpg-auto-import-keys --root=/mnt ref'
+}
+
+install_packages() {
+	local packages="grub2 kernel-default xfsprogs lvm2 command-not-found"
+	[ -d /sys/firmware/efi ] && packages="$packages grub2-*-efi"
+	chroot_exec "zypper --root=/mnt in -y -t pattern base enhanced_base sw_management yast2_basis yast2_server"
+	chroot_exec "zypper --root=/mnt in -y $packages"
+}
+
+restore_root_pass() {
+	# If the root password is not set, use vps2suse
+	if egrep -q '^root:.?:' /openSUSE/root.passwd; then
+		echo "root:vps2suse" | chpasswd
+	else
+		sed -i '/^root:/d' /etc/shadow
+		cat /openSUSE/root.passwd >> /etc/shadow
+	fi
+}
+
+cleanup() {
+	mv /openSUSE/etc/fstab /etc/fstab
+	awk "/\/openSUSE/ {print \$2}" /proc/mounts | sort -r | xargs umount -nl || true
+	rm -rf /openSUSE
+}
+
+configure_bootloader() {
+	grep -q '^[[:space:]]*eth' /proc/net/dev && sed -i.bak 's/GRUB_CMDLINE_LINUX_DEFAULT="/&net.ifnames=0 /' /etc/default/grub
+	/usr/sbin/mkinitrd
+	if [ -d /sys/firmware/efi ]; then
+		local efi_directory=$(lsblk -nro FSTYPE,MOUNTPOINT | awk '$1 == "vfat" {print $2}')
+		/usr/sbin/grub2-install --recheck --removable --efi-directory=$efi_directory
+	else
+		local root_dev=$(findmnt -no SOURCE /)
+		root_dev=$(lsblk -npsro TYPE,NAME "$root_dev" | awk '$1 == "disk" {print $2}')
+		/usr/sbin/grub2-install --recheck --force "$root_dev"
+	fi
+
+	local cfg=$(find /boot -name "grub.cfg")
+	[ ! "$cfg" ] && cfg="/boot/grub2/grub.cfg"
+	echo $cfg | xargs -d" " -L 1 /usr/sbin/grub2-mkconfig -o
+}
+
+configure_network() {
+	local dev=$(ip route show default | awk 'NR==1 {print $5}')
+
+	cat > "/etc/sysconfig/network/ifcfg-$dev" <<-EOF
+		BOOTPROTO=dhcp
+		STARTMODE=auto
+	EOF
+
+	systemctl enable sshd
+}
+
+finalize() {
+	/usr/sbin/update-ca-certificates
+
+	cat <<-EOF
+		Hi,
+		your VM has successfully been reimaged with openSUSE.
+
+		When you are finished with your post-installation, you'll need to reboot the VM the rough way:
+		# sync ; reboot -f
+
+		Then you'll be able to connect to your VM using SSH and to login using your old root password (or "vps2suse" if you didn't have a root password).
+	EOF
+}
+
+version=Tumbleweed
+container=container
+versionlower=$(echo $version | awk '{print tolower($0)}')
+
+while getopts ":c:h" opt; do
+	case $opt in
+	c)
+		container="$OPTARG"
+		;;
+	h)
+		cat <<-EOF
+			usage: ${0##*/} [options]
+
+			  Options:
+				-h                           Print this help message
+		EOF
+		exit 0
+		;;
+	:)
+		printf "%s: option requires an argument -- '%s'\n" "${0##*/}" "$OPTARG" >&2
+		exit 1
+		;;
+	?)
+		printf "%s: invalid option -- '%s'\n" "${0##*/}" "$OPTARG" >&2
+		exit 1
+		;;
+	esac
+done
+shift $((OPTIND - 1))
+
+cd /
+download_and_extract_bootstrap
+save_root_pass
+backup_old_files
+delete_all
+configure_chroot
+install_packages
+restore_root_pass
+cleanup
+configure_bootloader
+configure_network
+finalize
