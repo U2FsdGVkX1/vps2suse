@@ -1,30 +1,30 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Copyright 2021, U2FsdGVkX1 <U2FsdGVkX1@gmail.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 2 of the License, or
+# the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License at <http://www.gnu.org/licenses/> for
-# more details.
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 set -e
 
 if command -v wget >/dev/null 2>&1; then
-	download() { wget -O- "https://download.opensuse.org/$@" ; }
+	download() { wget -O- "$mirror/$@" ; }
 elif command -v curl >/dev/null 2>&1; then
-	download() { curl -fL "https://download.opensuse.org/$@" ; }
+	download() { curl -fL "$mirror/$@" ; }
 else
 	echo "This script needs curl or wget" >&2
 	exit 2
 fi
-
-cpu_type=$(uname -m)
 
 download_and_extract_bootstrap() {
 	local sha256 filename
@@ -43,6 +43,7 @@ download_and_extract_bootstrap() {
 	else
 		cp -Lp /etc/resolv.conf /openSUSE/etc
 	fi
+	sed -i "s/https:\/\/download.opensuse.org/$mirror/" /openSUSE/etc/zypp/repos.d/repo-*
 
 	mount -t proc /proc /openSUSE/proc
 	mount --make-rslave --rbind /sys /openSUSE/sys
@@ -102,7 +103,7 @@ cleanup() {
 }
 
 configure_bootloader() {
-	grep -q '^[[:space:]]*eth' /proc/net/dev && sed -i.bak 's/GRUB_CMDLINE_LINUX_DEFAULT="/&net.ifnames=0 /' /etc/default/grub
+	grep -q '^[[:space:]]*eth' /proc/net/dev && sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&net.ifnames=0 /' /etc/default/grub
 	/usr/sbin/mkinitrd
 	if [ -d /sys/firmware/efi ]; then
 		local efi_directory=$(lsblk -nro FSTYPE,MOUNTPOINT | awk '$1 == "vfat" {print $2}')
@@ -143,21 +144,31 @@ finalize() {
 	EOF
 }
 
+cpu_type=$(uname -m)
 version=Tumbleweed
-container=container
 versionlower=$(echo $version | awk '{print tolower($0)}')
+mirror=https://download.opensuse.org
+container=container
+if [ $cpu_type == 'aarch64' ]; then
+	container='container_ARM'
+fi
 
-while getopts ":c:h" opt; do
+while getopts ":c:m:h" opt; do
 	case $opt in
 	c)
 		container="$OPTARG"
+		;;
+	m)
+		mirror="$OPTARG"
 		;;
 	h)
 		cat <<-EOF
 			usage: ${0##*/} [options]
 
 			  Options:
-				-h                           Print this help message
+				-h                           Show help messages.
+				-c container                 Set architecture type for the container image (Default: auto detect).
+				-m mirror                    Set mirror address (Default: https://download.opensuse.org)..
 		EOF
 		exit 0
 		;;
