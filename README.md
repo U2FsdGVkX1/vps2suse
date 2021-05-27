@@ -17,7 +17,7 @@ $ sudo ./vps2suse #[OPTIONS]
 3. Sync data and reboot
 
 ```
-$ sync && reboot -f
+$ sudo $SHELL -c 'sync && reboot -f'
 ```
 
 4. Connect to server after about 3 minutes.
