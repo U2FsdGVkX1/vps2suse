@@ -11,7 +11,7 @@
 ```
 $ curl -L https://raw.githubusercontent.com/U2FsdGVkX1/vps2suse/main/vps2suse # or use https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse
 $ chmod +x vps2suse
-$ ./vps2suse [OPTIONS]
+$ sudo ./vps2suse [OPTIONS]
 ```
 
 3. Sync data and reboot
