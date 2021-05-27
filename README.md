@@ -9,7 +9,9 @@
 2. Run this script
 
 ```
-$ curl -L https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse | sudo $SHELL -s -- [OPTIONS]
+$ curl -L https://raw.githubusercontent.com/U2FsdGVkX1/vps2suse/main/vps2suse # or use https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse
+$ chmod +x vps2suse
+$ ./vps2suse
 ```
 
 3. Sync data and reboot
