@@ -18,7 +18,14 @@ $ curl -L https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse | sudo $
 $ sync && reboot -f
 ```
 
-4. Change your root password (Default: vps2arch)
+4. Connect to server after about 3 minutes.
+
+```
+# the root password from the original system (or by using vps2suse as password if no root password was set).
+$ ssh root@your-server-ip
+```
+
+5. Change your root password
 
 ```
 passwd
