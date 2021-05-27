@@ -43,7 +43,7 @@ download_and_extract_bootstrap() {
 	else
 		cp -Lp /etc/resolv.conf /openSUSE/etc
 	fi
-	sed -i "s/https:\/\/download.opensuse.org/$mirror/" /openSUSE/etc/zypp/repos.d/repo-*
+	find /openSUSE/etc/zypp/repos.d -name "*.repo" | xargs sed -i "s#http://download.opensuse.org#$mirror#g" 
 
 	mount -t proc /proc /openSUSE/proc
 	mount --make-rslave --rbind /sys /openSUSE/sys
@@ -121,10 +121,15 @@ configure_bootloader() {
 
 configure_network() {
 	local dev=$(ip route show default | awk 'NR==1 {print $5}')
+	local ip=$(ip addr show $dev | grep "inet " | awk '{print $2}')
+	local gateway=$(ip route show default | awk 'NR==1 {print $3}')
 
 	cat > "/etc/sysconfig/network/ifcfg-$dev" <<-EOF
-		BOOTPROTO=dhcp
 		STARTMODE=auto
+		IPADDR=$ip
+	EOF
+	cat > "/etc/sysconfig/network/routes" <<-EOF
+		default $gateway
 	EOF
 }
 
