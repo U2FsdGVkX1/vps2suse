@@ -15,7 +15,7 @@ $ curl -L https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse | sudo $
 3. Sync data and reboot
 
 ```
-$ sudo $SHELL -c 'sync && reboot -f'
+$ sync && reboot -f
 ```
 
 4. Change your root password (Default: vps2arch)
