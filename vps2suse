@@ -18,9 +18,9 @@
 set -e
 
 if command -v wget >/dev/null 2>&1; then
-	download() { wget -O- "$mirror/$@" ; }
+	download() { wget -O- "$mirror/$@" || wget -O- "http://download.opensuse.org/$@"; }
 elif command -v curl >/dev/null 2>&1; then
-	download() { curl -fL "$mirror/$@" ; }
+	download() { curl -fL "$mirror/$@" || curl -fL "http://download.opensuse.org/$@"; }
 else
 	echo "This script needs curl or wget" >&2
 	exit 2
@@ -43,7 +43,7 @@ download_and_extract_bootstrap() {
 	else
 		cp -Lp /etc/resolv.conf /openSUSE/etc
 	fi
-	find /openSUSE/etc/zypp/repos.d -name "*.repo" | xargs sed -i "s#http://download.opensuse.org#$mirror#g" 
+	find /openSUSE/etc/zypp/repos.d -name "*oss.repo" | xargs sed -i "s#http://download.opensuse.org#$mirror#g" 
 
 	mount -t proc /proc /openSUSE/proc
 	mount --make-rslave --rbind /sys /openSUSE/sys
@@ -151,7 +151,7 @@ finalize() {
 cpu_type=$(uname -m)
 version=Tumbleweed
 versionlower=$(echo $version | awk '{print tolower($0)}')
-mirror=https://download.opensuse.org
+mirror=http://download.opensuse.org
 container=container
 if [ $cpu_type == 'aarch64' ]; then
 	container='container_ARM'
@@ -172,7 +172,7 @@ while getopts ":c:m:h" opt; do
 			  Options:
 				-h                           Show help messages.
 				-c container                 Set architecture type for the container image (Default: auto detect).
-				-m mirror                    Set mirror address (Default: https://download.opensuse.org)..
+				-m mirror                    Set mirror address (Default: http://download.opensuse.org)..
 		EOF
 		exit 0
 		;;
