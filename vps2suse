@@ -126,11 +126,10 @@ configure_network() {
 		BOOTPROTO=dhcp
 		STARTMODE=auto
 	EOF
-
-	systemctl enable sshd
 }
 
 finalize() {
+	systemctl enable sshd
 	/usr/sbin/update-ca-certificates
 
 	cat <<-EOF
