@@ -106,7 +106,7 @@ configure_bootloader() {
 	grep -q '^[[:space:]]*eth' /proc/net/dev && sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&net.ifnames=0 /' /etc/default/grub
 	/usr/sbin/mkinitrd
 	if [ -d /sys/firmware/efi ]; then
-		local efi_directory=$(lsblk -nro FSTYPE,MOUNTPOINT | awk '$1 == "vfat" {print $2}')
+		local efi_directory=$(df --type=vfat | tail -n1 | awk '{print $6}')
 		/usr/sbin/grub2-install --recheck --removable --efi-directory=$efi_directory
 	else
 		local root_dev=$(findmnt -no SOURCE /)
