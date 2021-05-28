@@ -81,7 +81,7 @@ configure_chroot() {
 
 install_packages() {
 	local patterns="base documentation enhanced_base sw_management yast2_basis yast2_server"
-	local packages="ca-certificates grub2 kernel-default xfsprogs lvm2 command-not-found"
+	local packages="ca-certificates-mozilla grub2 kernel-default xfsprogs lvm2 command-not-found"
 	[ -d /sys/firmware/efi ] && packages="$packages grub2-*-efi"
 	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
 	chroot_exec "zypper --root=/mnt in -y $packages"
