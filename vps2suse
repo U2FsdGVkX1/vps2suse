@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Copyright 2021, U2FsdGVkX1 <U2FsdGVkX1@gmail.com>
 
@@ -75,14 +75,15 @@ chroot_exec() {
 
 configure_chroot() {
 	chroot_exec 'mkdir /mnt/etc'
-	chroot_exec 'cp -rp /etc/{zypp,resolv.conf} /mnt/etc'
+	chroot_exec 'cp -rp /etc/{zypp,products.d,resolv.conf} /mnt/etc'
 	chroot_exec 'zypper --gpg-auto-import-keys --root=/mnt ref'
 }
 
 install_packages() {
-	local packages="grub2 kernel-default xfsprogs lvm2 command-not-found"
+	local patterns="base documentation enhanced_base sw_management yast2_basis yast2_server"
+	local packages="ca-certificates grub2 kernel-default xfsprogs lvm2 command-not-found"
 	[ -d /sys/firmware/efi ] && packages="$packages grub2-*-efi"
-	chroot_exec "zypper --root=/mnt in -y -t pattern base enhanced_base sw_management yast2_basis yast2_server"
+	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
 	chroot_exec "zypper --root=/mnt in -y $packages"
 }
 
@@ -104,7 +105,7 @@ cleanup() {
 
 configure_bootloader() {
 	grep -q '^[[:space:]]*eth' /proc/net/dev && sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&net.ifnames=0 /' /etc/default/grub
-	/usr/sbin/mkinitrd
+	/sbin/mkinitrd
 	if [ -d /sys/firmware/efi ]; then
 		local efi_directory=$(df --type=vfat | tail -n1 | awk '{print $6}')
 		/usr/sbin/grub2-install --recheck --removable --efi-directory=$efi_directory
@@ -128,7 +129,7 @@ configure_network() {
 		STARTMODE=auto
 		IPADDR=$ip
 	EOF
-	cat > "/etc/sysconfig/network/routes" <<-EOF
+	cat > "/etc/sysconfig/network/ifroute-$dev" <<-EOF
 		default $gateway
 	EOF
 }
@@ -150,15 +151,17 @@ finalize() {
 
 cpu_type=$(uname -m)
 version=Tumbleweed
-versionlower=$(echo $version | awk '{print tolower($0)}')
 mirror=http://download.opensuse.org
 container=container
 if [ $cpu_type == 'aarch64' ]; then
 	container='container_ARM'
 fi
 
-while getopts ":c:m:h" opt; do
+while getopts ":s:c:m:h" opt; do
 	case $opt in
+	s)
+		version="$OPTARG"
+		;;
 	c)
 		container="$OPTARG"
 		;;
@@ -171,6 +174,7 @@ while getopts ":c:m:h" opt; do
 
 			  Options:
 				-h                           Show help messages.
+				-s system version            Set OS version (Default: Tumbleweed).
 				-c container                 Set architecture type for the container image (Default: auto detect).
 				-m mirror                    Set mirror address (Default: http://download.opensuse.org)..
 		EOF
@@ -187,6 +191,7 @@ while getopts ":c:m:h" opt; do
 	esac
 done
 shift $((OPTIND - 1))
+versionlower=$(echo $version | awk -F- '{print tolower($1)}')
 
 cd /
 download_and_extract_bootstrap
