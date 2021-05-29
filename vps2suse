@@ -80,8 +80,8 @@ configure_chroot() {
 }
 
 install_packages() {
-	local patterns="base documentation enhanced_base sw_management yast2_basis yast2_server"
-	local packages="ca-certificates-mozilla grub2 kernel-default xfsprogs lvm2 command-not-found"
+	local patterns="apparmor base documentation enhanced_base sw_management yast2_basis yast2_server"
+	local packages="ca-certificates grub2 kernel-default xfsprogs lvm2 command-not-found"
 	[ -d /sys/firmware/efi ] && packages="$packages grub2-*-efi"
 	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
 	chroot_exec "zypper --root=/mnt in -y $packages"
@@ -109,10 +109,16 @@ configure_bootloader() {
 	if [ -d /sys/firmware/efi ]; then
 		local efi_directory=$(df --type=vfat | tail -n1 | awk '{print $6}')
 		/usr/sbin/grub2-install --recheck --removable --efi-directory=$efi_directory
+		cat > /etc/sysconfig/bootloader <<-EOF
+			LOADER_TYPE="grub2-efi"
+		EOF
 	else
 		local root_dev=$(findmnt -no SOURCE /)
 		root_dev=$(lsblk -npsro TYPE,NAME "$root_dev" | awk '$1 == "disk" {print $2}')
 		/usr/sbin/grub2-install --recheck --force "$root_dev"
+		cat > /etc/sysconfig/bootloader <<-EOF
+			LOADER_TYPE="grub2"
+		EOF
 	fi
 
 	local cfg=$(find /boot -name "grub.cfg")
