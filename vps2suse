@@ -58,8 +58,8 @@ save_root_pass() {
 }
 
 backup_old_files() {
-	cp -Lp /etc/hostname /openSUSE/etc
-	cp -Lp /etc/localtime /openSUSE/etc
+	#cp -Lp /etc/hostname /openSUSE/etc
+	#cp -Lp /etc/localtime /openSUSE/etc
 	cp -Lp /etc/fstab /openSUSE/etc
 }
 
