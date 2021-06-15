@@ -138,6 +138,7 @@ configure_network() {
 }
 
 finalize() {
+	sed -i '/^#PermitRootLogin\s/s/.*/&\nPermitRootLogin yes/' /usr/etc/ssh/sshd_config || true
 	systemctl enable sshd
 	/usr/sbin/update-ca-certificates
 
