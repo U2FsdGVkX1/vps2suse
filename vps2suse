@@ -156,11 +156,11 @@ cpu_type=$(uname -m)
 version=Tumbleweed
 mirror=http://download.opensuse.org
 container=container
-if [ $cpu_type == 'aarch64' ]; then
-	container='container_ARM'
-fi
+# if [ $cpu_type == 'aarch64' ]; then
+# 	container='container_ARM'
+# fi
 
-while getopts ":s:c:m:h" opt; do
+while getopts "s:c:m:h:" opt; do
 	case $opt in
 	s)
 		version="$OPTARG"
