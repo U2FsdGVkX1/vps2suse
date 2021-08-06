@@ -84,7 +84,7 @@ install_packages() {
 	local packages="ca-certificates-mozilla grub2 grub2-branding-openSUSE kernel-default xfsprogs lvm2 command-not-found"
 	[ -d /sys/firmware/efi ] && packages="$packages grub2-*-efi"
 	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
-	chroot_exec "zypper --root=/mnt in -y $packages"
+	zypper in -y $packages
 }
 
 restore_root_pass() {
@@ -138,7 +138,9 @@ configure_network() {
 }
 
 finalize() {
-	sed -i 's#\#PermitRootLogin\s.*#PermitRootLogin yes#' /usr/etc/ssh/sshd_config || true
+	cat > "/etc/ssh/sshd_config.d/PermitRootLogin.conf" <<-EOF
+		PermitRootLogin yes
+	EOF
 	systemctl enable sshd
 	/usr/sbin/update-ca-certificates
 
