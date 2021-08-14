@@ -99,7 +99,7 @@ restore_root_pass() {
 
 cleanup() {
 	mv /openSUSE/etc/fstab /etc/fstab
-	awk "/\/openSUSE/ {print \$2}" /proc/mounts | sort -r | xargs umount -nl || true
+	awk '/\/openSUSE/ {print $2}' /proc/mounts | sort -r | xargs umount -nl || true
 	rm -rf /openSUSE
 }
 
@@ -124,17 +124,17 @@ configure_bootloader() {
 }
 
 configure_network() {
-	local dev=$(ip route show default | awk 'NR==1 {print $5}')
-	local ip=$(ip addr show $dev | grep "inet " | awk '{print $2}')
-	local gateway=$(ip route show default | awk 'NR==1 {print $3}')
+	local devs=$(ip -br l | awk '$2 == "UP" {print $1}')
+	for dev in devs; do
+		local ip=$(ip -br a s $devs scope global | awk '{for(i=3;i<=NF;i++) printf "IPADDR%d=%s\n", i-3, $i}')
+		local gateway=$((ip -4 r s default && ip -6 r s default) | awk '$5 == "$dev" {printf "default %s\n", $3}')
 
-	cat > "/etc/sysconfig/network/ifcfg-$dev" <<-EOF
-		STARTMODE=auto
-		IPADDR=$ip
-	EOF
-	cat > "/etc/sysconfig/network/ifroute-$dev" <<-EOF
-		default $gateway
-	EOF
+		cat > "/etc/sysconfig/network/ifcfg-$dev" <<-EOF
+			STARTMODE=auto
+			$ip
+		EOF
+		echo $gateway > "/etc/sysconfig/network/ifroute-$dev"
+	done
 }
 
 finalize() {
