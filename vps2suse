@@ -127,7 +127,8 @@ configure_network() {
 	local devs=$(ip -br l | awk '$2 == "UP" {print $1}')
 	for dev in devs; do
 		local ip=$(ip -br a s $devs scope global | awk '{for(i=3;i<=NF;i++) printf "IPADDR%d=%s\n", i-3, $i}')
-		local gateway=$((ip -4 r s default && ip -6 r s default) | awk '$5 == "$dev" {printf "default %s\n", $3}')
+		local routes=$(ip -4 r s default && ip -6 r s default)
+		local gateway=$(echo $routes | awk '$5 == "$dev" {printf "default %s\n", $3}')
 
 		cat > "/etc/sysconfig/network/ifcfg-$dev" <<-EOF
 			STARTMODE=auto
