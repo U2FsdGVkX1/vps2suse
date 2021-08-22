@@ -125,7 +125,7 @@ configure_bootloader() {
 }
 
 configure_network() {
-	for dev in $(ip -br l | awk '$2 == "UP" {print $1}'); do
+	for dev in $(ip -br l | awk '$2 == "UP" {split($1, r, "@"); print r[1]}'); do
 		local ip="$(ip -br a s $dev scope global | awk '{for(i=3;i<=NF;i++) printf "IPADDR%d=%s\n", i-3, $i}')"
 		local routes="$(ip -4 r s default; ip -6 r s default)"
 		local gateway="$(echo "$routes" | awk -v dev=$dev '$5 == dev {printf "default %s\n", $3}')"
