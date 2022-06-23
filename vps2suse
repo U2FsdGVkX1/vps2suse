@@ -43,7 +43,8 @@ download_and_extract_bootstrap() {
 	else
 		cp -Lp /etc/resolv.conf /openSUSE/etc
 	fi
-	find /openSUSE/etc/zypp/repos.d -name "*oss.repo" | xargs sed -i "s#http://download.opensuse.org#$mirror#g" 
+	find /openSUSE/etc/zypp/repos.d -name "*oss.repo" | xargs sed -i "s#http://download.opensuse.org#$mirror#g"
+	ld=`find /openSUSE/lib/ /openSUSE/lib64/ -name "ld-linux*.so*" -print -quit`
 
 	mount -t proc /proc /openSUSE/proc
 	mount --make-rslave --rbind /sys /openSUSE/sys
@@ -69,8 +70,8 @@ delete_all() {
 }
 
 chroot_exec() {
-	"/openSUSE/lib64"/ld-*.so.2 --library-path /openSUSE/lib64 \
-		/openSUSE/usr/bin/chroot /openSUSE /bin/bash -c "$*"
+	$ld --library-path /openSUSE/lib64 \
+	    /openSUSE/usr/bin/chroot /openSUSE /bin/bash -c "$*"
 }
 
 configure_chroot() {
@@ -161,9 +162,10 @@ cpu_type=$(uname -m)
 version=Tumbleweed
 mirror=http://download.opensuse.org
 container=container
-# if [ $cpu_type == 'aarch64' ]; then
-# 	container='container_ARM'
-# fi
+ld=
+if [ $cpu_type = aarch64 ]; then
+	container='container_ARM'
+fi
 
 while getopts "s:c:m:h:" opt; do
 	case $opt in
