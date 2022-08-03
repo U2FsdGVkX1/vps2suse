@@ -82,7 +82,7 @@ configure_chroot() {
 
 install_packages() {
 	local patterns="apparmor base documentation enhanced_base sw_management yast2_basis yast2_server"
-	local packages="grub2 grub2-branding-openSUSE kernel-default xfsprogs lvm2 command-not-found"
+	local packages="wicked grub2 grub2-branding-openSUSE kernel-default xfsprogs lvm2 command-not-found"
 	[ -d /sys/firmware/efi ] && packages="$packages grub2-*-efi"
 	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
 	/usr/sbin/update-ca-certificates
