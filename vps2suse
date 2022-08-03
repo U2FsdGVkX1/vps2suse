@@ -116,7 +116,7 @@ configure_bootloader() {
 		EOF
 	else
 		local root_dev=$(findmnt -no SOURCE /)
-		root_dev=$(lsblk -npsro TYPE,NAME "$root_dev" | awk '$1 == "disk" {print $2}')
+		root_dev=$(lsblk -npsro TYPE,NAME "$root_dev" | awk '$1 == "disk" {print $2}' | head -1)
 		/usr/sbin/grub2-install --recheck --force "$root_dev"
 		cat > /etc/sysconfig/bootloader <<-EOF
 			LOADER_TYPE="grub2"
