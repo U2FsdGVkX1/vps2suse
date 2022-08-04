@@ -106,8 +106,12 @@ cleanup() {
 }
 
 configure_bootloader() {
+	local kernel
+	
 	grep -q '^[[:space:]]*eth' /proc/net/dev && sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&net.ifnames=0 /' /etc/default/grub
-	/sbin/mkinitrd
+	kernel=$(ls /lib/modules)
+	dracut -f initrd-$kernel $kernel
+	#/sbin/mkinitrd
 	if [ -d /sys/firmware/efi ]; then
 		local efi_directory=$(df --type=vfat | tail -n1 | awk '{print $6}')
 		/usr/sbin/grub2-install --recheck --removable --efi-directory=$efi_directory
