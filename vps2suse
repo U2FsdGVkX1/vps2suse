@@ -81,9 +81,8 @@ configure_chroot() {
 }
 
 install_packages() {
-	local patterns="apparmor base documentation enhanced_base sw_management yast2_basis yast2_server"
-	local packages="wicked grub2 grub2-branding-openSUSE kernel-default xfsprogs lvm2 command-not-found"
-	[ -d /sys/firmware/efi ] && packages="$packages grub2-*-efi"
+	local patterns="apparmor base bootloader documentation enhanced_base sw_management yast2_basis yast2_server"
+	local packages="wicked kernel-default lvm2 command-not-found"
 	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
 	/usr/sbin/update-ca-certificates
 	zypper in -y $packages
@@ -106,12 +105,9 @@ cleanup() {
 }
 
 configure_bootloader() {
-	local kernel
-	
 	grep -q '^[[:space:]]*eth' /proc/net/dev && sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/&net.ifnames=0 /' /etc/default/grub
-	kernel=$(ls /lib/modules)
-	dracut -f initrd-$kernel $kernel
-	#/sbin/mkinitrd
+	
+	systemd-machine-id-setup && /sbin/mkinitrd
 	if [ -d /sys/firmware/efi ]; then
 		local efi_directory=$(df --type=vfat | tail -n1 | awk '{print $6}')
 		/usr/sbin/grub2-install --recheck --removable --efi-directory=$efi_directory
