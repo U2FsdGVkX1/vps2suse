@@ -81,7 +81,7 @@ configure_chroot() {
 }
 
 install_packages() {
-	local patterns="apparmor enhanced_base bootloader documentation sw_management yast2_basis yast2_server"
+	local patterns="enhanced_base bootloader yast2_basis yast2_server"
 	local packages="wicked kernel-default lvm2 scout"
 	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
 	/usr/sbin/update-ca-certificates
