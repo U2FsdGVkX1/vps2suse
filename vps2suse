@@ -65,7 +65,6 @@ backup_old_files() {
 	if [ -d /etc/ssh ]; then
 		mkdir /openSUSE/ssh
 		cp -Lp /etc/ssh/ssh_host* /openSUSE/ssh
-		chmod +R 0600 /openSUSE/ssh
 	fi
 	if [ -d /root/.ssh ]; then
 		cp -Lpr /root/.ssh /openSUSE/key
@@ -109,6 +108,7 @@ restore_root_pass() {
 cleanup() {
 	mv /openSUSE/etc/fstab /etc/fstab
 	if [ -d /openSUSE/ssh ]; then
+		chmod +R 0600 /openSUSE/ssh
 		mv /openSUSE/ssh/* /etc/ssh
 	fi
 	if [ -d /openSUSE/key ]; then
