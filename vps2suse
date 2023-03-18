@@ -108,7 +108,7 @@ restore_root_pass() {
 cleanup() {
 	mv /openSUSE/etc/fstab /etc/fstab
 	if [ -d /openSUSE/ssh ]; then
-		chmod +R 0600 /openSUSE/ssh
+		chmod -R 0600 /openSUSE/ssh
 		mv /openSUSE/ssh/* /etc/ssh
 	fi
 	if [ -d /openSUSE/key ]; then
