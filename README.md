@@ -1,6 +1,6 @@
 # VPS2SUSE
 
-> Install openSUSE on your VPS, no matter what's the current OS.
+> Install openSUSE on your VPS, no matter what the current OS is.
 
 ## Usage
 
