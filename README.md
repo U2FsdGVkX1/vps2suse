@@ -9,7 +9,7 @@
 2. Run this script
 
 ```
-$ curl -OL https://raw.githubusercontent.com/U2FsdGVkX1/vps2suse/main/vps2suse # or use https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse
+$ curl -OL https://git.io/vps2suse # or use https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse
 $ chmod +x vps2suse
 $ sudo ./vps2suse #[OPTIONS]
 ```
@@ -40,6 +40,13 @@ passwd
 -s Set OS version, For example "-s Leap-15.3" (Default: Tumbleweed).
 -c Set architecture type for the container image (Default: auto detect).
 -m Set mirror address (Default: https://download.opensuse.org).
+```
+
+## Notes
+
+The script adds a systemd unit to copy the route to gateway by default. It can be disabled using
+```
+sudo systemctl disable setup-gateway.service
 ```
 
 ## Credits
