@@ -9,7 +9,7 @@
 2. Run this script
 
 ```
-$ curl -OL https://git.io/vps2suse # or use https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse
+$ curl -OL https://raw.githubusercontent.com/U2FsdGVkX1/vps2suse/main/vps2suse # or use https://cdn.jsdelivr.net/gh/U2FsdGVkX1/vps2suse@main/vps2suse
 $ chmod +x vps2suse
 $ sudo ./vps2suse #[OPTIONS]
 ```
