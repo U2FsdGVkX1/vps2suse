@@ -38,6 +38,10 @@ download_and_extract_bootstrap() {
 		aarch64|armv6l|armv7l)
 			baseurl="ports/aarch64/tumbleweed/appliances/opensuse-tumbleweed-image.$architecture-lxc.tar.xz"
 			;;
+		*)
+			echo "Unsupported architectures."
+			exit 1
+			;;
 		esac
 		;;
 	*)
