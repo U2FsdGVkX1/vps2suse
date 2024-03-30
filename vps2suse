@@ -81,7 +81,7 @@ chroot_exec() {
 }
 
 configure_chroot() {
-	chroot_exec 'mkdir /mnt/etc'
+	chroot_exec 'mkdir -p /mnt/etc'
 	chroot_exec 'cp -rp /etc/{zypp,products.d,resolv.conf} /mnt/etc'
 	chroot_exec 'zypper --gpg-auto-import-keys --root=/mnt ref'
 }
