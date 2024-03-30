@@ -109,7 +109,12 @@ install_packages() {
 	patterns="enhanced_base bootloader yast2_basis yast2_server"
 	packages="wicked kernel-default scout lvm2 man iptables iputils"
 	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
+	
+	# avoid https failures
 	/usr/sbin/update-ca-certificates
+	# avoid kernel failure, say "Failed to get root password hash"
+	echo "root:vps2suse" | chpasswd
+
 	# Here we actually want the words to split, therefore no quotes.
 	zypper in -y $packages
 	unset patterns packages
