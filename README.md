@@ -37,8 +37,8 @@ passwd
 
 ```
 -h Show help messages.
--s Set OS version, For example "-s Leap-15.3" (Default: Tumbleweed).
--c Set architecture type for the container image (Default: auto detect).
+-s Set OS version, For leap 15.5, just set to "-s 15.5" (Default: Tumbleweed).
+-a Set architecture type for the container image (Default: auto detect).
 -m Set mirror address (Default: https://download.opensuse.org).
 ```
 

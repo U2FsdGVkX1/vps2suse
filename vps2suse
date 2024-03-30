@@ -29,9 +29,28 @@ else
 fi
 
 download_and_extract_bootstrap() {
-	download "repositories/Virtualization:/containers:/images:/openSUSE-$version/$container/opensuse-$versionlower-image.$cpu_type-lxc.tar.xz.sha256" > sha256sums.txt
+	case $version in
+	Tumbleweed)
+		case $architecture in
+		x86_64)
+			baseurl="tumbleweed/appliances/opensuse-tumbleweed-image.x86_64-lxc.tar.xz"
+			;;
+		aarch64|armv6l|armv7l)
+			baseurl="ports/aarch64/tumbleweed/appliances/opensuse-tumbleweed-image.$architecture-lxc.tar.xz"
+			;;
+		*)
+			echo "Unsupported architectures."
+			exit 1
+			;;
+		esac
+		;;
+	*)
+		baseurl="distribution/leap/$version/appliances/opensuse-leap-image.$architecture-lxc.tar.xz"
+		;;
+	esac
+	download "$baseurl.sha256" > sha256sums.txt
 	filename=$(awk '{print $2}' sha256sums.txt)
-	download "repositories/Virtualization:/containers:/images:/openSUSE-$version/$container/$filename" > "$filename"
+	download "$baseurl" > "$filename"
 	sha256sum -c sha256sums.txt || exit 1
 
 	mkdir openSUSE
@@ -90,7 +109,12 @@ install_packages() {
 	patterns="enhanced_base bootloader yast2_basis yast2_server"
 	packages="wicked kernel-default scout lvm2 man iptables iputils"
 	chroot_exec "zypper -i --root=/mnt in -y -t pattern $patterns"
+	
+	# avoid https failures
 	/usr/sbin/update-ca-certificates
+	# avoid kernel failure, say "Failed to get root password hash"
+	echo "root:vps2suse" | chpasswd
+
 	# Here we actually want the words to split, therefore no quotes.
 	zypper in -y $packages
 	unset patterns packages
@@ -223,31 +247,18 @@ finalize() {
 	EOF
 }
 
-cpu_type=$(uname -m)
+architecture=$(uname -m)
 version=Tumbleweed
 mirror=http://download.opensuse.org
-container=container
 ld=
-if [ "$cpu_type" = aarch64 ]; then
-	container='container_ARM'
-fi
 
-while getopts "s:c:m:h:" opt; do
+while getopts "s:a:m:h:" opt; do
 	case $opt in
 	s)
 		version="$OPTARG"
-		case $version in
-		*Leap-15.4|*Leap-15.5|*Leap-15.6)
-			echo "Leap distributions above 15.3 are currently not supported. You can try installing 15.3 and upgrading manually afterwards."
-			exit 1
-			;;
-		*Leap*) 
-			# Fixes URI for the leap distribution.
-			container="containers" ;;
-		esac
 		;;
-	c)
-		container="$OPTARG"
+	a)
+		architecture="$OPTARG"
 		;;
 	m)
 		mirror="$OPTARG"
@@ -259,7 +270,7 @@ while getopts "s:c:m:h:" opt; do
 			  Options:
 				-h                           Show help messages.
 				-s system version            Set OS version (Default: Tumbleweed).
-				-c container                 Set architecture type for the container image (Default: auto detect).
+				-a architecture              Set architecture type for the container image (Default: auto detect).
 				-m mirror                    Set mirror address (Default: http://download.opensuse.org)..
 		EOF
 		exit 0
@@ -275,7 +286,6 @@ while getopts "s:c:m:h:" opt; do
 	esac
 done
 shift $((OPTIND - 1))
-versionlower=$(echo "$version" | awk -F- '{print tolower($1)}')
 
 cd /
 download_and_extract_bootstrap
