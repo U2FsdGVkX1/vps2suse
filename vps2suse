@@ -114,6 +114,8 @@ install_packages() {
 	/usr/sbin/update-ca-certificates
 	# avoid kernel failure, say "Failed to get root password hash"
 	echo "root:vps2suse" | chpasswd
+	# avoid complaining "Found NDB Packages.db database while attempting bdb backend: using ndb backend"
+	rpmdb --rebuilddb
 
 	# Here we actually want the words to split, therefore no quotes.
 	zypper in -y $packages
